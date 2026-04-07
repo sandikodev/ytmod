@@ -9,8 +9,8 @@ type Bindings = {
 const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('*', cors({
-  origin: ['https://sandikodev.github.io', 'http://localhost:5173'],
-  allowMethods: ['GET', 'POST', 'OPTIONS'],
+  origin: ['https://sandikodev.github.io', 'http://localhost:5173', 'http://localhost:4173'],
+  allowMethods: ['GET', 'OPTIONS'],
 }))
 
 app.route('/comments', comments)

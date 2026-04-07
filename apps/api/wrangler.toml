@@ -3,8 +3,4 @@ main = "src/index.ts"
 compatibility_date = "2024-06-20"
 compatibility_flags = ["nodejs_compat"]
 
-[vars]
-# Set YOUTUBE_API_KEY via: wrangler secret put YOUTUBE_API_KEY
-
-[[rate_limiting]]
-namespace_id = "ytmod-comments-rl"
+# Set secret via: pnpm exec wrangler secret put YOUTUBE_API_KEY
