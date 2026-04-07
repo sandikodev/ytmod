@@ -1,0 +1,13 @@
+{
+  "name": "ytmod",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @ytmod/api dev",
+    "dev:web": "pnpm --filter @ytmod/web dev",
+    "build": "pnpm --filter @ytmod/shared build && pnpm --filter @ytmod/api build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
