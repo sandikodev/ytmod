@@ -2,12 +2,40 @@
   "name": "ytmod",
   "private": true,
   "scripts": {
+    "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:web\"",
     "dev:api": "pnpm --filter @ytmod/api dev",
     "dev:web": "pnpm --filter @ytmod/web dev",
-    "build": "pnpm --filter @ytmod/shared build && pnpm --filter @ytmod/api build",
-    "typecheck": "pnpm -r typecheck"
+    "build": "pnpm --filter @ytmod/web build",
+    "test": "pnpm --filter \"*\" test",
+    "lint": "eslint . && prettier --check .",
+    "lint:fix": "eslint . --fix && prettier --write .",
+    "typecheck": "pnpm --filter \"*\" typecheck",
+    "format": "prettier --write .",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "typescript": "^5.4.5"
+    "@typescript-eslint/eslint-plugin": "^8.58.1",
+    "@typescript-eslint/parser": "^8.58.1",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.2.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-svelte": "^3.5.1",
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.3"
+  },
+  "lint-staged": {
+    "*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.svelte": [
+      "prettier --write"
+    ],
+    "*.{json,md,toml}": [
+      "prettier --write"
+    ]
   }
 }
