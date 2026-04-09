@@ -9,3 +9,4 @@ apps/api/.env.production
 .wrangler/
 oke.chat
 .kiro/settings/
+apps/api/dev.db
