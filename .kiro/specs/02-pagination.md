@@ -1,6 +1,6 @@
 # Spec: Pagination
 
-## Status: Ready
+## Status: Done
 
 ## Problem
 

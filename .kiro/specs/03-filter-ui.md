@@ -1,6 +1,6 @@
 # Spec: Filter UI
 
-## Status: Ready
+## Status: Done
 
 ## Problem
 
