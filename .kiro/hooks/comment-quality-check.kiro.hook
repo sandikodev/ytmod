@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Comment Quality Check",
+  "description": "Ingatkan developer untuk menambah komentar yang verbose dan intuitif setiap kali fungsi atau route baru ditambahkan.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "apps/api/src/routes/*.ts",
+      "packages/shared/src/*.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "File {{file}} baru saja diedit. Periksa apakah:\n1. Setiap fungsi publik/export punya JSDoc yang menjelaskan tujuannya (bukan hanya nama fungsi)\n2. Setiap environment variable binding punya komentar penjelasan\n3. Blok logika non-trivial (loop, fallback, error handling) punya komentar 'mengapa'\n4. File/module baru punya header komentar yang menjelaskan konteks dan hubungannya dengan sistem\n\nBerdasarkan standar di .kiro/steering/code-quality.md. Jika ada yang kurang, tunjukkan baris mana dan berikan contoh komentar yang sesuai."
+  }
+}

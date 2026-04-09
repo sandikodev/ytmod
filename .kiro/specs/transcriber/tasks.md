@@ -45,7 +45,7 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
     - Generate videoId valid, pastikan nama file selalu `transcript-{videoId}.txt` dan `transcript-{videoId}.srt`
     - Tag: `// Feature: transcriber, Property 9: Nama file export konsisten`
 
-- [-] 2. Perbaiki API route: validasi videoId dan HTML stripping
+- [x] 2. Perbaiki API route: validasi videoId dan HTML stripping
   - [x] 2.1 Tambah fungsi `extractVideoId(input)` di `apps/api/src/routes/transcript.ts`
     - Ekstrak 11-char ID dari URL sebelum validasi
     - Mendukung format yang sama dengan web helper
@@ -56,7 +56,7 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
     - Return HTTP 400 dengan pesan `"Invalid videoId format"` jika tidak valid
     - _Requirements: 3.3_
 
-  - [~] 2.3 Tambah fungsi `parseTimedtext(events)` sebagai fungsi murni yang dapat ditest
+  - [x] 2.3 Tambah fungsi `parseTimedtext(events)` sebagai fungsi murni yang dapat ditest
     - Pisahkan logika parsing dari route handler
     - Strip HTML entities: `&amp;`, `&lt;`, `&gt;`, `&#39;`, `&quot;`
     - Strip HTML tags: `<b>`, `<i>`, `<font>`, dll (regex `/<[^>]+>/g`)
@@ -93,7 +93,7 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
     - Generate string yang tidak match `[a-zA-Z0-9_-]{11}`, pastikan API selalu return 400
     - Tag: `// Feature: transcriber, Property 7: videoId tidak valid selalu ditolak`
 
-- [~] 3. Checkpoint — Pastikan semua tests pass
+- [x] 3. Checkpoint — Pastikan semua tests pass
   - Jalankan `pnpm test && pnpm typecheck && pnpm lint`, pastikan semua hijau sebelum lanjut.
 
 - [ ] 4. Tambah property test round-trip di shared package
@@ -103,8 +103,8 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
     - Generate `TranscriptResponse` arbitrary, serialize ke JSON lalu parse kembali, pastikan hasilnya equivalent
     - Tag: `// Feature: transcriber, Property 5: TranscriptResponse JSON round-trip`
 
-- [ ] 5. Update web page untuk menggunakan lib helper
-  - [~] 5.1 Refactor `apps/web/src/routes/transcript/+page.svelte` untuk menggunakan fungsi dari `$lib/transcript`
+- [-] 5. Update web page untuk menggunakan lib helper
+  - [x] 5.1 Refactor `apps/web/src/routes/transcript/+page.svelte` untuk menggunakan fungsi dari `$lib/transcript`
     - Import `extractVideoId`, `formatTxt`, `formatSrt` dari `$lib/transcript`
     - Hapus implementasi inline `toSrt` dan `extractVideoId` yang ada di component
     - Pastikan `downloadTxt` dan `downloadSrt` menggunakan helper yang sudah ditest

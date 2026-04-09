@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "Sanitize Check — No Hardcoded Secrets or Internal URLs",
+  "description": "Peringatkan jika ada potensi hardcode secret, API key, atau URL internal di file yang baru diedit. Berlaku untuk semua file source code.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "apps/**/*.ts",
+      "apps/**/*.svelte",
+      "packages/**/*.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "File {{file}} baru saja diedit. Periksa apakah ada:\n1. Hardcoded API key, token, atau secret (pola: AIza, sk-, Bearer, eyJ, password=)\n2. URL internal atau domain spesifik yang seharusnya ada di env var\n3. PII (nama orang, email, nomor telepon)\n4. IP address private (192.168.x.x, 10.x.x.x, 172.16.x.x)\n\nJika ditemukan, jelaskan baris mana yang bermasalah dan cara memperbaikinya menggunakan environment variable. Jika tidak ada masalah, cukup konfirmasi 'OK — tidak ada hardcode terdeteksi'."
+  }
+}
