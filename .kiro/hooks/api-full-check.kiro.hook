@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Full Check on API Edit",
+  "description": "Jalankan full verification (test + typecheck + lint) setiap kali route API diedit, memastikan semua hijau sebelum commit",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "apps/api/src/**/*.ts"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "pnpm test && pnpm typecheck && pnpm lint",
+    "timeout": 120
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Verify After Task Completion",
+  "description": "Jalankan test + typecheck otomatis setelah setiap spec task selesai, memastikan tidak ada yang broken",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "pnpm test && pnpm typecheck",
+    "timeout": 120
+  }
+}

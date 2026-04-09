@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "TDD Reminder Before Task",
+  "description": "Ingatkan TDD workflow sebelum setiap spec task dimulai — schema dulu, test dulu, baru impl",
+  "version": "1",
+  "when": {
+    "type": "preTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Sebuah spec task baru akan dimulai. Sebelum implementasi, pastikan urutan TDD diikuti: 1) Schema di packages/shared/src/index.ts sudah diupdate, 2) Test sudah ditulis dan dikonfirmasi fail, 3) Baru implementasi. Ingatkan user jika ada langkah yang terlewat."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Run Tests on Test File Edit",
+  "description": "Jalankan pnpm test otomatis setiap kali file test diedit, untuk konfirmasi fail/pass sesuai TDD cycle",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.test.ts"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "pnpm test",
+    "timeout": 120
+  }
+}

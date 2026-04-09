@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "Lint on Web Edit",
+  "description": "Jalankan eslint + prettier check setiap kali file Svelte diedit",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "apps/web/src/**/*.svelte",
+      "apps/web/src/**/*.ts"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "pnpm lint",
+    "timeout": 60
+  }
+}
