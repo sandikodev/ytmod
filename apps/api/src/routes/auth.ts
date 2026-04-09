@@ -103,7 +103,8 @@ auth.post('/register', zValidator('json', AuthSchema), async (c) => {
 
   const token = await sign(
     { sub: id, email, exp: Math.floor(Date.now() / 1000) + JWT_EXPIRE_SECONDS },
-    c.env.JWT_SECRET
+    c.env.JWT_SECRET,
+    'HS256'
   )
 
   return c.json({ token, user: { id, email } }, 201)
@@ -128,7 +129,8 @@ auth.post('/login', zValidator('json', AuthSchema), async (c) => {
 
   const token = await sign(
     { sub: user.id, email: user.email, exp: Math.floor(Date.now() / 1000) + JWT_EXPIRE_SECONDS },
-    c.env.JWT_SECRET
+    c.env.JWT_SECRET,
+    'HS256'
   )
 
   return c.json({ token, user: { id: user.id, email: user.email } })

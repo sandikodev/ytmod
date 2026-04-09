@@ -22,6 +22,6 @@ type Bindings = { JWT_SECRET: string }
 export function authMiddleware(): MiddlewareHandler<{ Bindings: Bindings }> {
   return async (c, next) => {
     // Ambil JWT_SECRET dari env saat runtime (bukan saat module load)
-    return jwt({ secret: c.env.JWT_SECRET })(c, next)
+    return jwt({ secret: c.env.JWT_SECRET, alg: 'HS256' })(c, next)
   }
 }
