@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { TranscriptResponse } from '@ytmod/shared'
+  import { extractVideoId, formatTxt, formatSrt } from '$lib/transcript'
 
   const API_BASE = import.meta.env.VITE_API_URL
   if (!API_BASE) throw new Error('VITE_API_URL is not set')
@@ -10,22 +11,13 @@
   let error = $state('')
   let result = $state<TranscriptResponse | null>(null)
 
-  function extractVideoId(input: string): string {
-    try {
-      const url = new URL(input)
-      return url.searchParams.get('v') ?? url.pathname.split('/').pop() ?? input
-    } catch {
-      return input.trim()
-    }
-  }
-
   async function fetchTranscript() {
     if (!videoInput.trim()) return
     loading = true
     error = ''
     result = null
 
-    const videoId = extractVideoId(videoInput)
+    const videoId = extractVideoId(videoInput) ?? videoInput.trim()
     try {
       const res = await fetch(`${API_BASE}/transcript?videoId=${videoId}&lang=${lang}`)
       if (!res.ok) {
@@ -40,29 +32,6 @@
     }
   }
 
-  function toSrt(r: TranscriptResponse): string {
-    return r.segments
-      .map((seg, i) => {
-        const fmt = (s: number) => {
-          const h = Math.floor(s / 3600)
-            .toString()
-            .padStart(2, '0')
-          const m = Math.floor((s % 3600) / 60)
-            .toString()
-            .padStart(2, '0')
-          const sec = Math.floor(s % 60)
-            .toString()
-            .padStart(2, '0')
-          const ms = Math.floor((s % 1) * 1000)
-            .toString()
-            .padStart(3, '0')
-          return `${h}:${m}:${sec},${ms}`
-        }
-        return `${i + 1}\n${fmt(seg.start)} --> ${fmt(seg.start + seg.duration)}\n${seg.text}`
-      })
-      .join('\n\n')
-  }
-
   function download(content: string, filename: string, type: string) {
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([content], { type }))
@@ -72,16 +41,12 @@
 
   function downloadTxt() {
     if (!result) return
-    download(
-      result.segments.map((s) => s.text).join('\n'),
-      `transcript-${result.videoId}.txt`,
-      'text/plain'
-    )
+    download(formatTxt(result.segments), `transcript-${result.videoId}.txt`, 'text/plain')
   }
 
   function downloadSrt() {
     if (!result) return
-    download(toSrt(result), `transcript-${result.videoId}.srt`, 'text/plain')
+    download(formatSrt(result.segments), `transcript-${result.videoId}.srt`, 'text/plain')
   }
 </script>
 

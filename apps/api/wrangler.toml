@@ -3,5 +3,16 @@ main = "src/index.ts"
 compatibility_date = "2024-06-20"
 compatibility_flags = ["nodejs_compat"]
 
-# Secrets untuk production: pnpm exec wrangler secret put YOUTUBE_API_KEY
-# Secrets untuk dev lokal: simpan di .dev.vars (tidak di-commit)
+# ─── Secrets (production) ─────────────────────────────────────────────────────
+# Set via Cloudflare dashboard atau CLI:
+#   pnpm exec wrangler secret put YOUTUBE_API_KEY
+#   pnpm exec wrangler secret put CORS_ORIGINS
+#   pnpm exec wrangler secret put CLIPPER_ENGINE_URL
+#
+# ─── Dev lokal ────────────────────────────────────────────────────────────────
+# Buat file apps/api/.dev.vars (tidak di-commit, sudah di .gitignore):
+#   YOUTUBE_API_KEY=your_key_here
+#   CORS_ORIGINS=http://localhost:5173
+#   CLIPPER_ENGINE_URL=http://localhost:8080
+#
+# Lihat .env.example untuk contoh nilai per environment.

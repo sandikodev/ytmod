@@ -1,39 +1,37 @@
 # Project Context — ytmod
 
-## Identitas
-
-Gunakan identity **sandikodev** untuk semua operasi git/gh di project ini.
-
-```bash
-use sandikodev
-as sandikodev git push
-as sandikodev gh pr create
-```
-
-Remote: `git@github-sandikodev:sandikodev/ytmod.git`
-
 ## Project
 
-YouTube tools monorepo — comment downloader, transcriber, dan tools lainnya.
+YouTube tools monorepo — comment downloader, transcript, dan YT clipper.
 
-- **API**: Hono + Cloudflare Workers → `https://ytmod-api.<subdomain>.workers.dev`
+- **API**: Hono + Cloudflare Workers
 - **Web**: SvelteKit + GitHub Pages → `https://sandikodev.github.io/ytmod`
 - **Shared**: Zod schemas di `packages/shared/src/index.ts`
+- **Clipper Engine**: Rust binary (`clipper-server`) — submodule di `apps/clipper`
 
 ## Struktur
 
 ```
-apps/api/src/
-  index.ts              # Hono entry, CORS middleware
-  routes/
-    comments.ts         # GET /comments — YouTube Data API proxy
-
-apps/web/src/
-  routes/
-    +page.svelte        # Main UI (Svelte 5 runes)
+apps/
+  api/src/
+    index.ts              # Hono entry, CORS middleware
+    routes/
+      comments.ts         # GET  /comments  — YouTube Data API proxy
+      transcript.ts       # GET  /transcript — YouTube timedtext proxy
+      clipper.ts          # POST /clipper/*  — Clipper Engine proxy
+  web/src/
+    routes/
+      +page.svelte              # Comment downloader
+      transcript/+page.svelte   # Transcript downloader
+      clipper/+page.svelte      # YT Clipper (BYOK Gemini)
+  clipper/                      # git submodule → sandikodev/clipper-rust
+    src/
+      lib.rs      # Shared logic (download, analyze, clip)
+      main.rs     # CLI binary
+      server.rs   # HTTP server binary (clipper-server)
 
 packages/shared/src/
-  index.ts              # Zod schemas & TypeScript types
+  index.ts        # Semua Zod schemas & TypeScript types
 ```
 
 ## Environment Variables
@@ -41,11 +39,12 @@ packages/shared/src/
 ### API (`apps/api/.dev.vars` lokal, `wrangler secret` production)
 
 ```
-YOUTUBE_API_KEY=...
-CORS_ORIGINS=http://localhost:5173,https://sandikodev.github.io
+YOUTUBE_API_KEY=...         # YouTube Data API v3 key
+CORS_ORIGINS=...            # Comma-separated allowed origins
+CLIPPER_ENGINE_URL=...      # Base URL clipper-server. Lihat .env.example.
 ```
 
-### Web (`apps/web/.env` lokal, `.env.production` production)
+### Web (`apps/web/.env` lokal)
 
 ```
 VITE_API_URL=http://localhost:8787
@@ -66,17 +65,23 @@ pnpm format       # prettier --write
 ## Deploy
 
 ```bash
-# API
-as sandikodev pnpm exec wrangler deploy   # dari apps/api/
+# API — dari apps/api/
+pnpm exec wrangler deploy
 
 # Web — otomatis via GitHub Actions saat push ke main
-as sandikodev git push
+git push
+
+# Clipper Engine — dari apps/clipper/
+docker compose up -d                                    # development
+docker compose -f docker-compose.yml \
+               -f docker-compose.prod.yml up -d        # production
 ```
 
 ## Konvensi
 
 - Commit: conventional commits — `feat:`, `fix:`, `docs:`, `chore:`, `test:`
-- Scope: `(api)`, `(web)`, `(shared)` — contoh: `feat(api): add pagination`
+- Scope: `(api)`, `(web)`, `(shared)`, `(clipper)` — contoh: `feat(api): add pagination`
 - Branch: `main` untuk production, feature branch untuk PR
-- Secrets: tidak pernah di-commit
-- Types: selalu dari `packages/shared/`, bukan didefinisikan ulang di api/web
+- Secrets: tidak pernah di-commit — selalu via env var
+- Types: selalu dari `packages/shared/`, tidak didefinisikan ulang di api/web
+- Komentar: wajib verbose dan intuitif — lihat `.kiro/steering/code-quality.md`

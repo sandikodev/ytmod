@@ -1,0 +1,4 @@
+# Prettier tidak bisa parse format ini
+*.toml
+*.lock
+.kiro/

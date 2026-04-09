@@ -1,3 +1,14 @@
+/**
+ * Transcript route — GET /transcript
+ *
+ * Mengambil subtitle/caption dari YouTube via endpoint timedtext tidak resmi.
+ * YouTube tidak menyediakan official API untuk transcript, sehingga kita fetch
+ * langsung dari https://www.youtube.com/api/timedtext yang tersedia publik.
+ *
+ * Fallback order: lang → 'en' → auto-generated lang → auto-generated 'en'
+ * Ini memaksimalkan kemungkinan mendapat transcript meski bahasa yang diminta
+ * tidak tersedia dalam versi manual.
+ */
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import {
@@ -6,13 +17,21 @@ import {
   type TranscriptSegment,
 } from '@ytmod/shared'
 
-type Bindings = { YOUTUBE_API_KEY: string }
+type Bindings = {
+  YOUTUBE_API_KEY: string // YouTube Data API v3 key — digunakan untuk fetch video title (non-fatal)
+}
 
 export const transcript = new Hono<{ Bindings: Bindings }>()
 
-// Rate limit: 20 req/min per IP
+// In-memory rate limit store: IP → { count, reset timestamp }
+// Reset setiap 60 detik, max 20 request per IP per window
 const rateMap = new Map<string, { count: number; reset: number }>()
 
+/**
+ * Rate limit middleware — 20 req/min per IP.
+ * Diterapkan sebelum semua route handler untuk melindungi dari abuse.
+ * Menggunakan CF-Connecting-IP (tersedia di Cloudflare Workers) sebagai identifier.
+ */
 transcript.use('*', async (c, next) => {
   const ip = c.req.header('CF-Connecting-IP') ?? c.req.header('X-Forwarded-For') ?? 'unknown'
   const now = Date.now()
@@ -27,7 +46,11 @@ transcript.use('*', async (c, next) => {
   return next()
 })
 
-// Task 2.1 — ekstrak 11-char video ID dari berbagai format input
+/**
+ * Ekstrak 11-char YouTube video ID dari berbagai format input.
+ * Mendukung: ID langsung, youtube.com/watch?v=, youtu.be/, embed/, m.youtube.com/watch?v=
+ * Return null jika format tidak dikenali atau ID tidak valid.
+ */
 export function extractVideoId(input: string): string | null {
   const trimmed = input.trim()
   if (!trimmed) return null
@@ -57,18 +80,32 @@ export function extractVideoId(input: string): string | null {
   return validateVideoId(trimmed) ? trimmed : null
 }
 
-// Task 2.2 — validasi pattern [a-zA-Z0-9_-]{11}
+/**
+ * Validasi bahwa string adalah YouTube video ID yang valid.
+ * Format: tepat 11 karakter, hanya [a-zA-Z0-9_-].
+ */
 export function validateVideoId(id: string): boolean {
   return /^[a-zA-Z0-9_-]{11}$/.test(id)
 }
 
-// Task 2.3 — fungsi murni untuk parsing timedtext events
+/**
+ * Struktur satu event dari response JSON timedtext YouTube (fmt=json3).
+ * Event tanpa `segs` adalah marker waktu — difilter saat parsing.
+ */
 export type TimedtextEvent = {
-  tStartMs: number
-  dDurationMs: number
-  segs?: Array<{ utf8: string }>
+  tStartMs: number // waktu mulai dalam milidetik
+  dDurationMs: number // durasi dalam milidetik
+  segs?: Array<{ utf8: string }> // potongan teks; tidak ada = bukan segment teks
 }
 
+/**
+ * Konversi array timedtext events menjadi TranscriptSegment yang bersih.
+ * - Filter events tanpa `segs`
+ * - Gabungkan semua utf8 dalam satu event
+ * - Strip HTML entities dan tags dari teks
+ * - Filter segment kosong setelah stripping
+ * - Konversi waktu dari milidetik ke detik
+ */
 export function parseTimedtext(events: TimedtextEvent[]): TranscriptSegment[] {
   return events
     .filter((e) => e.segs)
@@ -84,6 +121,10 @@ export function parseTimedtext(events: TimedtextEvent[]): TranscriptSegment[] {
     .filter((s) => s.text)
 }
 
+/**
+ * Strip HTML entities dan tags dari teks timedtext.
+ * YouTube kadang menyertakan markup seperti <b>, <i>, atau entities seperti &amp;.
+ */
 function stripHtml(input: string): string {
   return input
     .replace(/&amp;/g, '&')
@@ -98,15 +139,16 @@ transcript.get('/', zValidator('query', TranscriptQuerySchema), async (c) => {
   const { videoId: rawVideoId, lang } = c.req.valid('query')
   const apiKey = c.env.YOUTUBE_API_KEY
 
-  // Task 2.1 — ekstrak video ID dari URL atau ID langsung
+  // Ekstrak video ID dari URL atau ID langsung, lalu validasi format
   const videoId = extractVideoId(rawVideoId)
 
-  // Task 2.2 — validasi setelah ekstraksi
+  // Tolak jika bukan 11-char ID yang valid setelah ekstraksi
   if (!videoId) {
     return c.json({ error: 'Invalid videoId format' }, 400)
   }
 
-  // Fetch video title — non-fatal
+  // Fetch video title via YouTube Data API — non-fatal.
+  // Gagal tidak memblokir response; transcript tetap dikembalikan tanpa title.
   let videoTitle: string | undefined
   try {
     const vRes = await fetch(
@@ -146,7 +188,7 @@ transcript.get('/', zValidator('query', TranscriptQuerySchema), async (c) => {
 
     if (!data.events?.length) continue
 
-    // Task 2.3 — gunakan parseTimedtext()
+    // Gunakan parseTimedtext() untuk konversi events → segments yang bersih
     const segments = parseTimedtext(data.events)
 
     if (!segments.length) continue
