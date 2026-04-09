@@ -1,6 +1,29 @@
+/**
+ * Test suite untuk GET /transcript route dan helper functions.
+ *
+ * Mencakup:
+ * - Integration tests: route handler dengan mock fetch (status codes, response shape)
+ * - Unit tests: extractVideoId, validateVideoId, parseTimedtext
+ * - Property-based tests (fast-check): Property 3, 4, 7 dari design doc
+ *
+ * Semua external calls (YouTube timedtext, YouTube Data API) di-mock via vi.stubGlobal('fetch').
+ * Tidak ada request ke real YouTube API di test ini.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import app from '../index'
+import * as fc from 'fast-check'
+import { Hono } from 'hono'
+import { transcript } from './transcript'
+import { extractVideoId, validateVideoId, parseTimedtext } from './transcript'
 
+// Test app tanpa auth middleware — langsung mount transcript route.
+// Auth middleware di index.ts membutuhkan JWT token yang tidak relevan untuk unit test route ini.
+const testApp = new Hono<{
+  Bindings: { YOUTUBE_API_KEY: string; CORS_ORIGINS: string; CLIPPER_ENGINE_URL: string }
+}>()
+testApp.route('/transcript', transcript)
+
+// Contoh response timedtext JSON3 dari YouTube.
+// Event ketiga sengaja tanpa `segs` untuk menguji bahwa parser memfilternya.
 const mockTimedtext = JSON.stringify({
   events: [
     { tStartMs: 0, dDurationMs: 2000, segs: [{ utf8: 'Hello ' }, { utf8: 'world' }] },
@@ -10,9 +33,9 @@ const mockTimedtext = JSON.stringify({
 })
 
 const mockEnv = {
-  YOUTUBE_API_KEY: 'test-key',
-  CORS_ORIGINS: 'http://localhost:5173',
-  CLIPPER_ENGINE_URL: 'http://localhost:8080',
+  YOUTUBE_API_KEY: 'test-key', // YouTube Data API v3 key (dummy untuk test)
+  CORS_ORIGINS: 'http://localhost:5173', // Allowed CORS origins
+  CLIPPER_ENGINE_URL: 'http://localhost:8080', // Base URL clipper-server (tidak dipakai di route ini)
 }
 
 beforeEach(() => {
@@ -21,7 +44,7 @@ beforeEach(() => {
 
 describe('GET /transcript', () => {
   it('returns 400 on missing videoId', async () => {
-    const res = await app.request('/transcript', {}, mockEnv)
+    const res = await testApp.request('/transcript', {}, mockEnv)
     expect(res.status).toBe(400)
   })
 
@@ -40,7 +63,7 @@ describe('GET /transcript', () => {
       })
     )
 
-    const res = await app.request('/transcript?videoId=dQw4w9WgXcQ', {}, mockEnv)
+    const res = await testApp.request('/transcript?videoId=dQw4w9WgXcQ', {}, mockEnv)
     expect(res.status).toBe(200)
     const data = (await res.json()) as {
       segments: Array<{ text: string; start: number }>
@@ -59,7 +82,315 @@ describe('GET /transcript', () => {
       'fetch',
       vi.fn().mockResolvedValue({ ok: false, text: () => Promise.resolve('') })
     )
-    const res = await app.request('/transcript?videoId=dQw4w9WgXcQ', {}, mockEnv)
+    const res = await testApp.request('/transcript?videoId=dQw4w9WgXcQ', {}, mockEnv)
     expect(res.status).toBe(404)
+  })
+})
+
+// ─── Task 2.4: Unit tests untuk extractVideoId dan validateVideoId ────────────
+
+describe('extractVideoId', () => {
+  it('mengekstrak ID dari youtube.com/watch?v=', () => {
+    expect(extractVideoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
+  })
+
+  it('mengekstrak ID dari youtu.be/', () => {
+    expect(extractVideoId('https://youtu.be/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
+  })
+
+  it('mengekstrak ID dari embed/', () => {
+    expect(extractVideoId('https://www.youtube.com/embed/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
+  })
+
+  it('mengekstrak ID dari m.youtube.com/watch?v=', () => {
+    expect(extractVideoId('https://m.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
+  })
+
+  it('mengembalikan ID langsung jika sudah 11 karakter valid', () => {
+    expect(extractVideoId('dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
+  })
+
+  it('mengembalikan null untuk input kosong', () => {
+    expect(extractVideoId('')).toBeNull()
+  })
+
+  it('mengembalikan null untuk ID terlalu pendek', () => {
+    expect(extractVideoId('abc')).toBeNull()
+  })
+
+  it('mengembalikan null untuk ID terlalu panjang', () => {
+    expect(extractVideoId('dQw4w9WgXcQextra')).toBeNull()
+  })
+
+  it('mengembalikan null untuk karakter tidak valid', () => {
+    expect(extractVideoId('dQw4w9WgX!@')).toBeNull()
+  })
+})
+
+describe('validateVideoId', () => {
+  it('mengembalikan true untuk ID valid 11 karakter', () => {
+    expect(validateVideoId('dQw4w9WgXcQ')).toBe(true)
+  })
+
+  it('mengembalikan true untuk ID dengan underscore dan dash', () => {
+    expect(validateVideoId('abc_def-ghij')).toBe(false) // 12 chars
+    expect(validateVideoId('abc_def-ghi')).toBe(true) // 11 chars
+  })
+
+  it('mengembalikan false untuk ID terlalu pendek', () => {
+    expect(validateVideoId('short')).toBe(false)
+  })
+
+  it('mengembalikan false untuk ID terlalu panjang', () => {
+    expect(validateVideoId('dQw4w9WgXcQQ')).toBe(false)
+  })
+
+  it('mengembalikan false untuk karakter tidak valid (spasi)', () => {
+    expect(validateVideoId('dQw4w9WgX Q')).toBe(false)
+  })
+
+  it('mengembalikan false untuk karakter tidak valid (tanda seru)', () => {
+    expect(validateVideoId('dQw4w9WgX!Q')).toBe(false)
+  })
+
+  it('mengembalikan false untuk string kosong', () => {
+    expect(validateVideoId('')).toBe(false)
+  })
+})
+
+describe('GET /transcript — validasi videoId format', () => {
+  it('returns 400 untuk ID terlalu pendek', async () => {
+    const res = await testApp.request('/transcript?videoId=short', {}, mockEnv)
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 untuk ID dengan karakter tidak valid', async () => {
+    const res = await testApp.request('/transcript?videoId=dQw4w9WgX!Q', {}, mockEnv)
+    expect(res.status).toBe(400)
+  })
+})
+
+// ─── Task 2.5: Unit tests untuk parseTimedtext ────────────────────────────────
+
+describe('parseTimedtext', () => {
+  it('mengkonversi tStartMs / 1000 → start', () => {
+    const result = parseTimedtext([{ tStartMs: 3500, dDurationMs: 2000, segs: [{ utf8: 'hi' }] }])
+    expect(result[0].start).toBe(3.5)
+  })
+
+  it('mengkonversi dDurationMs / 1000 → duration', () => {
+    const result = parseTimedtext([{ tStartMs: 0, dDurationMs: 4500, segs: [{ utf8: 'hi' }] }])
+    expect(result[0].duration).toBe(4.5)
+  })
+
+  it('memfilter event tanpa segs', () => {
+    const result = parseTimedtext([
+      { tStartMs: 0, dDurationMs: 1000 }, // tanpa segs
+      { tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'hello' }] },
+    ])
+    expect(result).toHaveLength(1)
+    expect(result[0].text).toBe('hello')
+  })
+
+  it('menggabungkan semua utf8 dalam satu event', () => {
+    const result = parseTimedtext([
+      { tStartMs: 0, dDurationMs: 1000, segs: [{ utf8: 'Hello ' }, { utf8: 'world' }] },
+    ])
+    expect(result[0].text).toBe('Hello world')
+  })
+
+  it('strip HTML entities: &amp; → &', () => {
+    const result = parseTimedtext([
+      { tStartMs: 0, dDurationMs: 1000, segs: [{ utf8: 'Tom &amp; Jerry' }] },
+    ])
+    expect(result[0].text).toBe('Tom & Jerry')
+  })
+
+  it('strip HTML entities: &lt; dan &gt; — lalu tag hasil decode juga distrip', () => {
+    // &lt;value&gt; → <value> → "" (tag distrip), jadi segment difilter
+    const result = parseTimedtext([
+      { tStartMs: 0, dDurationMs: 1000, segs: [{ utf8: '&lt;value&gt;' }] },
+    ])
+    // Setelah decode entity lalu strip tag, hasilnya kosong → segment difilter
+    expect(result).toHaveLength(0)
+  })
+
+  it('strip HTML entities: &lt; dan &gt; dalam konteks teks biasa', () => {
+    const result = parseTimedtext([
+      { tStartMs: 0, dDurationMs: 1000, segs: [{ utf8: 'a &lt; b &gt; c' }] },
+    ])
+    // "a < b > c" — regex /<[^>]+>/ matches "< b >" (dengan spasi), jadi distrip
+    // hasilnya: "a  c" (spasi ganda karena " < b > " distrip)
+    expect(result[0].text).toBe('a  c')
+  })
+
+  it('strip HTML entities: &#39; → apostrophe', () => {
+    const result = parseTimedtext([
+      { tStartMs: 0, dDurationMs: 1000, segs: [{ utf8: 'it&#39;s' }] },
+    ])
+    expect(result[0].text).toBe("it's")
+  })
+
+  it('strip HTML entities: &quot; → tanda kutip', () => {
+    const result = parseTimedtext([
+      { tStartMs: 0, dDurationMs: 1000, segs: [{ utf8: '&quot;quoted&quot;' }] },
+    ])
+    expect(result[0].text).toBe('"quoted"')
+  })
+
+  it('strip HTML tags: <b>, <i>, <font>', () => {
+    const result = parseTimedtext([
+      {
+        tStartMs: 0,
+        dDurationMs: 1000,
+        segs: [{ utf8: '<b>bold</b> and <i>italic</i> and <font color="red">red</font>' }],
+      },
+    ])
+    expect(result[0].text).toBe('bold and italic and red')
+  })
+
+  it('memfilter segment kosong setelah stripping', () => {
+    const result = parseTimedtext([
+      { tStartMs: 0, dDurationMs: 1000, segs: [{ utf8: '<b></b>' }] },
+      { tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'real text' }] },
+    ])
+    expect(result).toHaveLength(1)
+    expect(result[0].text).toBe('real text')
+  })
+})
+
+// ─── Task 2.6: Property 3 — Timedtext events → Segment fields ────────────────
+// Feature: transcriber, Property 3: Timedtext events → Segment fields
+
+describe('Property 3: Timedtext events → Segment fields', () => {
+  it('setiap segment output memiliki text (string), start (number), duration (number) dengan konversi ms → detik yang benar', () => {
+    // Validates: Requirements 2.1
+    const timedtextEventArb = fc.record({
+      tStartMs: fc.integer({ min: 0, max: 3_600_000 }),
+      dDurationMs: fc.integer({ min: 100, max: 10_000 }),
+      segs: fc.array(fc.record({ utf8: fc.string({ minLength: 1, maxLength: 50 }) }), {
+        minLength: 1,
+        maxLength: 5,
+      }),
+    })
+
+    fc.assert(
+      fc.property(fc.array(timedtextEventArb, { minLength: 1, maxLength: 20 }), (events) => {
+        const segments = parseTimedtext(events)
+
+        // Semua segment yang dihasilkan harus memiliki field yang benar
+        for (const seg of segments) {
+          expect(typeof seg.text).toBe('string')
+          expect(typeof seg.start).toBe('number')
+          expect(typeof seg.duration).toBe('number')
+        }
+
+        // Verifikasi konversi ms → detik untuk setiap event yang menghasilkan segment
+        const eventsWithSegs = events.filter((e) => e.segs && e.segs.length > 0)
+        expect(segments.length).toBeLessThanOrEqual(eventsWithSegs.length)
+
+        // Setiap segment yang ada harus cocok dengan event asalnya
+        for (const seg of segments) {
+          const matchingEvent = events.find(
+            (e) => e.tStartMs / 1000 === seg.start && e.dDurationMs / 1000 === seg.duration
+          )
+          expect(matchingEvent).toBeDefined()
+        }
+      }),
+      { numRuns: 100 }
+    )
+  })
+})
+
+// ─── Task 2.7: Property 4 — HTML dibersihkan dari segment text ───────────────
+// Feature: transcriber, Property 4: HTML dibersihkan dari segment text
+
+describe('Property 4: HTML dibersihkan dari segment text', () => {
+  it('output tidak mengandung HTML entities atau tags', () => {
+    // Validates: Requirements 2.4
+    const htmlEntityArb = fc.constantFrom('&amp;', '&lt;', '&gt;', '&#39;', '&quot;')
+    const htmlTagArb = fc.constantFrom(
+      '<b>',
+      '</b>',
+      '<i>',
+      '</i>',
+      '<font color="red">',
+      '</font>',
+      '<em>',
+      '</em>'
+    )
+    const htmlChunkArb = fc.oneof(htmlEntityArb, htmlTagArb)
+
+    // Generate teks yang mengandung campuran teks biasa dan HTML
+    const textWithHtmlArb = fc
+      .array(
+        fc.oneof(
+          fc
+            .string({ minLength: 1, maxLength: 10 })
+            .filter((s) => !s.includes('<') && !s.includes('&')),
+          htmlChunkArb
+        ),
+        { minLength: 1, maxLength: 10 }
+      )
+      .map((parts) => parts.join(''))
+
+    fc.assert(
+      fc.property(textWithHtmlArb, (rawText) => {
+        const events = [{ tStartMs: 0, dDurationMs: 1000, segs: [{ utf8: rawText }] }]
+        const segments = parseTimedtext(events)
+
+        for (const seg of segments) {
+          // Tidak boleh ada HTML tags yang tersisa
+          expect(seg.text).not.toMatch(/<[^>]+>/)
+          // Tidak boleh ada HTML entities yang tersisa
+          expect(seg.text).not.toMatch(/&amp;|&lt;|&gt;|&#39;|&quot;/)
+        }
+      }),
+      { numRuns: 100 }
+    )
+  })
+})
+
+// ─── Task 2.8: Property 7 — videoId tidak valid selalu ditolak ───────────────
+// Feature: transcriber, Property 7: videoId tidak valid selalu ditolak
+
+describe('Property 7: videoId tidak valid selalu ditolak', () => {
+  it('validateVideoId mengembalikan false untuk string yang tidak match [a-zA-Z0-9_-]{11}', () => {
+    // Validates: Requirements 3.3
+    const invalidVideoIdArb = fc.oneof(
+      // Terlalu pendek (0–10 karakter) dengan karakter valid
+      fc.stringMatching(/^[a-zA-Z0-9_-]{0,10}$/),
+      // Terlalu panjang (12+ karakter) dengan karakter valid
+      fc.stringMatching(/^[a-zA-Z0-9_-]{12,22}$/),
+      // Tepat 11 karakter tapi mengandung karakter tidak valid
+      fc.string({ minLength: 11, maxLength: 11 }).filter((s) => /[^a-zA-Z0-9_-]/.test(s))
+    )
+
+    fc.assert(
+      fc.property(invalidVideoIdArb, (invalidId) => {
+        expect(validateVideoId(invalidId)).toBe(false)
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  it('API mengembalikan 400 untuk videoId yang tidak valid', async () => {
+    // Validates: Requirements 3.3
+    // Gunakan beberapa contoh konkret untuk menghindari rate limit dari property test
+    const invalidIds = [
+      'short', // terlalu pendek
+      'toolongidstr', // terlalu panjang (12 chars)
+      'dQw4w9WgX!Q', // karakter tidak valid
+      'dQw4w9WgX Q', // spasi
+    ]
+
+    for (const invalidId of invalidIds) {
+      const res = await testApp.request(
+        `/transcript?videoId=${encodeURIComponent(invalidId)}`,
+        {},
+        mockEnv
+      )
+      expect(res.status).toBe(400)
+    }
   })
 })

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { TranscriptResponse } from '@ytmod/shared'
   import { extractVideoId, formatTxt, formatSrt } from '$lib/transcript'
+  import { authFetch, requireAuth } from '$lib/auth'
 
   const API_BASE = import.meta.env.VITE_API_URL
   if (!API_BASE) throw new Error('VITE_API_URL is not set')
@@ -13,13 +14,14 @@
 
   async function fetchTranscript() {
     if (!videoInput.trim()) return
+    requireAuth()
     loading = true
     error = ''
     result = null
 
     const videoId = extractVideoId(videoInput) ?? videoInput.trim()
     try {
-      const res = await fetch(`${API_BASE}/transcript?videoId=${videoId}&lang=${lang}`)
+      const res = await authFetch(`${API_BASE}/transcript?videoId=${videoId}&lang=${lang}`)
       if (!res.ok) {
         const data = (await res.json()) as { error: string }
         throw new Error(data.error ?? `HTTP ${res.status}`)

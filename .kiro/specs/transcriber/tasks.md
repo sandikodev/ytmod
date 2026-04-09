@@ -15,31 +15,31 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
     - `formatSrt(segments)` → format SRT standar per segment: index, timestamp range, teks, baris kosong
     - _Requirements: 3.2, 5.3, 5.4, 5.5, 5.6_
 
-  - [-]\* 1.2 Tulis unit tests untuk `extractVideoId` di `apps/web/src/lib/transcript.test.ts`
+  - [x]\* 1.2 Tulis unit tests untuk `extractVideoId` di `apps/web/src/lib/transcript.test.ts`
     - Test semua format URL yang didukung
     - Test ID langsung 11 karakter
     - Test input tidak valid mengembalikan `null`
     - _Requirements: 3.2_
 
-  - [~]\* 1.3 Tulis unit tests untuk `formatTxt` dan `formatSrt`
+  - [x]\* 1.3 Tulis unit tests untuk `formatTxt` dan `formatSrt`
     - Test `formatTxt`: output tanpa timestamp, setiap segment satu baris
     - Test `formatSrt`: index dimulai dari 1, format timestamp `HH:MM:SS,mmm --> HH:MM:SS,mmm`, baris kosong sebagai separator
     - Test `formatSrtTimestamp`: konversi detik ke format SRT yang benar (edge case: 0, 3600, 3661.5)
     - _Requirements: 5.3, 5.4_
 
-  - [~]\* 1.4 Tulis property test untuk `extractVideoId` (Property 6)
+  - [x]\* 1.4 Tulis property test untuk `extractVideoId` (Property 6)
     - **Property 6: Ekstraksi videoId dari berbagai format URL**
     - **Validates: Requirements 3.2**
     - Generate berbagai URL YouTube valid, pastikan hasil selalu 11 karakter match `[a-zA-Z0-9_-]{11}`
     - Tag: `// Feature: transcriber, Property 6: extractVideoId dari berbagai format URL`
 
-  - [~]\* 1.5 Tulis property test untuk `formatTxt` dan `formatSrt` (Property 8)
+  - [x]\* 1.5 Tulis property test untuk `formatTxt` dan `formatSrt` (Property 8)
     - **Property 8: Export format selalu benar**
     - **Validates: Requirements 5.3, 5.4**
     - Generate array `TranscriptSegment` arbitrary, pastikan `formatTxt` tidak mengandung timestamp dan `formatSrt` mengandung index + timestamp range per segment
     - Tag: `// Feature: transcriber, Property 8: Export format selalu benar`
 
-  - [~]\* 1.6 Tulis property test untuk nama file export (Property 9)
+  - [x]\* 1.6 Tulis property test untuk nama file export (Property 9)
     - **Property 9: Nama file export konsisten**
     - **Validates: Requirements 5.5, 5.6**
     - Generate videoId valid, pastikan nama file selalu `transcript-{videoId}.txt` dan `transcript-{videoId}.srt`
@@ -63,31 +63,31 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
     - Filter segment dengan text kosong setelah stripping
     - _Requirements: 2.1, 2.4_
 
-  - [~]\* 2.4 Tulis unit tests untuk `extractVideoId` dan `validateVideoId` di `transcript.test.ts`
+  - [x]\* 2.4 Tulis unit tests untuk `extractVideoId` dan `validateVideoId` di `transcript.test.ts`
     - Test ekstraksi dari berbagai format URL
     - Test validasi: valid ID pass, ID terlalu pendek/panjang/karakter invalid → 400
     - _Requirements: 3.2, 3.3_
 
-  - [~]\* 2.5 Tulis unit tests untuk `parseTimedtext`
+  - [x]\* 2.5 Tulis unit tests untuk `parseTimedtext`
     - Test konversi `tStartMs / 1000` → `start`, `dDurationMs / 1000` → `duration`
     - Test filter event tanpa `segs`
     - Test HTML stripping: entities dan tags dihapus
     - Test filter segment kosong setelah stripping
     - _Requirements: 2.1, 2.4_
 
-  - [~]\* 2.6 Tulis property test untuk `parseTimedtext` — Segment fields (Property 3)
+  - [x]\* 2.6 Tulis property test untuk `parseTimedtext` — Segment fields (Property 3)
     - **Property 3: Timedtext events → Segment fields**
     - **Validates: Requirements 2.1**
     - Generate array timedtext events arbitrary, pastikan setiap segment output memiliki `text` (string), `start` (number), `duration` (number) dengan konversi ms → detik yang benar
     - Tag: `// Feature: transcriber, Property 3: Timedtext events → Segment fields`
 
-  - [~]\* 2.7 Tulis property test untuk HTML stripping (Property 4)
+  - [x]\* 2.7 Tulis property test untuk HTML stripping (Property 4)
     - **Property 4: HTML dibersihkan dari segment text**
     - **Validates: Requirements 2.4**
     - Generate text dengan berbagai kombinasi HTML entities dan tags, pastikan output tidak mengandung karakter HTML
     - Tag: `// Feature: transcriber, Property 4: HTML dibersihkan dari segment text`
 
-  - [~]\* 2.8 Tulis property test untuk validasi videoId (Property 7)
+  - [x]\* 2.8 Tulis property test untuk validasi videoId (Property 7)
     - **Property 7: videoId tidak valid selalu ditolak**
     - **Validates: Requirements 3.3**
     - Generate string yang tidak match `[a-zA-Z0-9_-]{11}`, pastikan API selalu return 400

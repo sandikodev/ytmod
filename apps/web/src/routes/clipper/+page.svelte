@@ -15,6 +15,7 @@
    */
 
   import type { ClipConfig, ClipperAnalyzeResponse, ClipperClipResponse, Clip } from '@ytmod/shared'
+  import { authFetch, requireAuth } from '$lib/auth'
 
   const API_BASE = import.meta.env.VITE_API_URL
   if (!API_BASE) throw new Error('VITE_API_URL is not set')
@@ -63,6 +64,7 @@
   /** Step 1: Analyze video with Gemini AI via ytmod-api proxy */
   async function analyze() {
     if (!videoInput.trim() || !geminiKey.trim()) return
+    requireAuth()
     analyzing = true
     analyzeError = ''
     config = null
@@ -76,7 +78,7 @@
       : `https://www.youtube.com/watch?v=${videoId}`
 
     try {
-      const res = await fetch(`${API_BASE}/clipper/analyze`, {
+      const res = await authFetch(`${API_BASE}/clipper/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, gemini_api_key: geminiKey }),
@@ -108,7 +110,7 @@
     const clipConfig: ClipConfig = { ...config, clips: selectedClips }
 
     try {
-      const res = await fetch(`${API_BASE}/clipper/clip`, {
+      const res = await authFetch(`${API_BASE}/clipper/clip`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: clipConfig }),
