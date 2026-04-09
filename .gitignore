@@ -1,12 +1,36 @@
+# Dependencies
 node_modules/
+target/
+
+# Build output
 dist/
 build/
+.svelte-kit/
+
+# Environment files — JANGAN PERNAH commit file ini
+# Semua secrets harus via wrangler secret atau CI/CD env vars
 .env
 .env.local
+.env.production
+.env.*.local
+apps/api/.dev.vars
 apps/web/.env.production
-apps/api/.env.production
-.dev.vars
+
+# Wrangler
 .wrangler/
-oke.chat
-.kiro/settings/
+
+# Database lokal
 apps/api/dev.db
+*.db
+*.sqlite
+
+# Kiro session files
+oke.chat
+*.chat
+*.cli
+
+# Kiro settings (machine-specific)
+.kiro/settings/
+
+# Drizzle generated (bisa di-regenerate dengan drizzle-kit)
+apps/api/drizzle/

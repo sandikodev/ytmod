@@ -8,13 +8,13 @@
  * Untuk development lokal, gunakan Turso preview database
  * (bukan file: URL — tidak didukung oleh web client).
  *
- * Set di .dev.vars:
- *   TURSO_URL=libsql://ytmod-prev-sandikodev.aws-ap-northeast-1.turso.io
- *   TURSO_AUTH_TOKEN=<preview token>
+ * Set di .dev.vars (tidak di-commit):
+ *   TURSO_URL=libsql://your-preview-db.turso.io
+ *   TURSO_AUTH_TOKEN=<preview token dari Turso dashboard>
  *
  * Env vars production (wrangler secret):
- *   TURSO_URL=libsql://ytmod-sandikodev.aws-us-east-1.turso.io
- *   TURSO_AUTH_TOKEN=<production token>
+ *   TURSO_URL=libsql://your-production-db.turso.io
+ *   TURSO_AUTH_TOKEN=<production token dari Turso dashboard>
  */
 
 import { createClient } from '@libsql/client/web'
