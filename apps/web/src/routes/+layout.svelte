@@ -11,6 +11,7 @@
 <nav>
   <a href="{base}/">💬 Komentar</a>
   <a href="{base}/transcript">📝 Transcript</a>
+  <a href="{base}/clipper">✂️ Clipper</a>
 </nav>
 
 {@render children()}

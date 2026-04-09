@@ -27,9 +27,84 @@ transcript.use('*', async (c, next) => {
   return next()
 })
 
+// Task 2.1 — ekstrak 11-char video ID dari berbagai format input
+export function extractVideoId(input: string): string | null {
+  const trimmed = input.trim()
+  if (!trimmed) return null
+
+  // Coba parse sebagai URL
+  try {
+    const url = new URL(trimmed)
+    const host = url.hostname.replace(/^www\./, '')
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      const v = url.searchParams.get('v')
+      if (v) return validateVideoId(v) ? v : null
+
+      const embedMatch = url.pathname.match(/^\/embed\/([a-zA-Z0-9_-]{11})/)
+      if (embedMatch) return embedMatch[1]
+    }
+
+    if (host === 'youtu.be') {
+      const id = url.pathname.slice(1).split('?')[0]
+      return validateVideoId(id) ? id : null
+    }
+  } catch {
+    // Bukan URL — coba sebagai ID langsung
+  }
+
+  // ID langsung 11 karakter
+  return validateVideoId(trimmed) ? trimmed : null
+}
+
+// Task 2.2 — validasi pattern [a-zA-Z0-9_-]{11}
+export function validateVideoId(id: string): boolean {
+  return /^[a-zA-Z0-9_-]{11}$/.test(id)
+}
+
+// Task 2.3 — fungsi murni untuk parsing timedtext events
+export type TimedtextEvent = {
+  tStartMs: number
+  dDurationMs: number
+  segs?: Array<{ utf8: string }>
+}
+
+export function parseTimedtext(events: TimedtextEvent[]): TranscriptSegment[] {
+  return events
+    .filter((e) => e.segs)
+    .map((e) => {
+      const raw = e.segs!.map((s) => s.utf8).join('')
+      const text = stripHtml(raw).trim()
+      return {
+        text,
+        start: e.tStartMs / 1000,
+        duration: e.dDurationMs / 1000,
+      }
+    })
+    .filter((s) => s.text)
+}
+
+function stripHtml(input: string): string {
+  return input
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/<[^>]+>/g, '')
+}
+
 transcript.get('/', zValidator('query', TranscriptQuerySchema), async (c) => {
-  const { videoId, lang } = c.req.valid('query')
+  const { videoId: rawVideoId, lang } = c.req.valid('query')
   const apiKey = c.env.YOUTUBE_API_KEY
+
+  // Task 2.1 — ekstrak video ID dari URL atau ID langsung
+  const videoId = extractVideoId(rawVideoId)
+
+  // Task 2.2 — validasi setelah ekstraksi
+  if (!videoId) {
+    return c.json({ error: 'Invalid videoId format' }, 400)
+  }
 
   // Fetch video title — non-fatal
   let videoTitle: string | undefined
@@ -62,9 +137,7 @@ transcript.get('/', zValidator('query', TranscriptQuerySchema), async (c) => {
     const text = await res.text()
     if (!text || text === '{}' || text.length < 10) continue
 
-    let data: {
-      events?: Array<{ tStartMs: number; dDurationMs: number; segs?: Array<{ utf8: string }> }>
-    }
+    let data: { events?: TimedtextEvent[] }
     try {
       data = JSON.parse(text)
     } catch {
@@ -73,17 +146,8 @@ transcript.get('/', zValidator('query', TranscriptQuerySchema), async (c) => {
 
     if (!data.events?.length) continue
 
-    const segments: TranscriptSegment[] = data.events
-      .filter((e) => e.segs)
-      .map((e) => ({
-        text: e
-          .segs!.map((s) => s.utf8)
-          .join('')
-          .trim(),
-        start: e.tStartMs / 1000,
-        duration: e.dDurationMs / 1000,
-      }))
-      .filter((s) => s.text)
+    // Task 2.3 — gunakan parseTimedtext()
+    const segments = parseTimedtext(data.events)
 
     if (!segments.length) continue
 

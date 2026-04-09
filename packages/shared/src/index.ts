@@ -52,3 +52,44 @@ export const TranscriptQuerySchema = z.object({
 export type TranscriptSegment = z.infer<typeof TranscriptSegmentSchema>
 export type TranscriptResponse = z.infer<typeof TranscriptResponseSchema>
 export type TranscriptQuery = z.infer<typeof TranscriptQuerySchema>
+
+// Clipper schemas
+export const ClipSchema = z.object({
+  start: z.string(),
+  end: z.string(),
+  output: z.string(),
+})
+
+export const ClipConfigSchema = z.object({
+  input_video: z.string(),
+  clips: z.array(ClipSchema),
+})
+
+export const ClipperAnalyzeRequestSchema = z.object({
+  url: z.string().url(),
+  gemini_api_key: z.string().min(1),
+})
+
+export const ClipperAnalyzeResponseSchema = z.object({
+  config: ClipConfigSchema,
+})
+
+export const ClipperClipRequestSchema = z.object({
+  config: ClipConfigSchema,
+})
+
+export const ClipperClipResultSchema = z.object({
+  output: z.string(),
+  success: z.boolean(),
+})
+
+export const ClipperClipResponseSchema = z.object({
+  results: z.array(ClipperClipResultSchema),
+})
+
+export type Clip = z.infer<typeof ClipSchema>
+export type ClipConfig = z.infer<typeof ClipConfigSchema>
+export type ClipperAnalyzeRequest = z.infer<typeof ClipperAnalyzeRequestSchema>
+export type ClipperAnalyzeResponse = z.infer<typeof ClipperAnalyzeResponseSchema>
+export type ClipperClipRequest = z.infer<typeof ClipperClipRequestSchema>
+export type ClipperClipResponse = z.infer<typeof ClipperClipResponseSchema>
