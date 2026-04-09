@@ -41,11 +41,11 @@ comments.get('/', zValidator('query', CommentsQuerySchema), async (c) => {
   const res = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?${params}`)
 
   if (!res.ok) {
-    const err = await res.json() as { error: { message: string } }
+    const err = (await res.json()) as { error: { message: string } }
     return c.json({ error: err.error.message }, res.status as 400 | 403 | 404)
   }
 
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     pageInfo: { totalResults: number }
     nextPageToken?: string
     items: Array<{
@@ -64,8 +64,22 @@ comments.get('/', zValidator('query', CommentsQuerySchema), async (c) => {
     }>
   }
 
+  // Fetch video title — failure is non-fatal
+  let videoTitle: string | undefined
+  try {
+    const videoParams = new URLSearchParams({ part: 'snippet', id: videoId, key: apiKey })
+    const videoRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?${videoParams}`)
+    if (videoRes.ok) {
+      const videoData = (await videoRes.json()) as { items: Array<{ snippet: { title: string } }> }
+      videoTitle = videoData.items[0]?.snippet?.title
+    }
+  } catch {
+    // swallow — videoTitle stays undefined
+  }
+
   const response: CommentsResponse = {
     videoId,
+    videoTitle,
     totalComments: data.pageInfo.totalResults,
     nextPageToken: data.nextPageToken,
     comments: data.items.map((item) => ({
