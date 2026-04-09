@@ -54,6 +54,7 @@ function addMissingScheme(value: string): string {
   return value
 }
 
+/** Validasi bahwa string adalah YouTube video ID yang valid: tepat 11 karakter [a-zA-Z0-9_-] */
 function isValidId(id: string): boolean {
   return /^[a-zA-Z0-9_-]{11}$/.test(id)
 }
