@@ -46,7 +46,7 @@ jobs:
       - name: Add .nojekyll
         run: touch apps/web/build/.nojekyll
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: apps/web/build
 
