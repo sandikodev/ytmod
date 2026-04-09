@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { CommentsResponse } from '@ytmod/shared'
 
-  const API_BASE = import.meta.env.VITE_API_URL ?? 'https://ytmod-api.konxcid.workers.dev'
+  const API_BASE = import.meta.env.VITE_API_URL
+  if (!API_BASE) throw new Error('VITE_API_URL is not set')
 
   let videoInput = $state('')
   let loading = $state(false)

@@ -4,14 +4,15 @@ import { comments } from './routes/comments'
 
 type Bindings = {
   YOUTUBE_API_KEY: string
+  CORS_ORIGINS: string  // comma-separated, e.g. "https://example.com,http://localhost:5173"
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-app.use('*', cors({
-  origin: ['https://sandikodev.github.io', 'https://ytmod-api.konxcid.workers.dev', 'http://localhost:5173', 'http://localhost:4173'],
-  allowMethods: ['GET', 'OPTIONS'],
-}))
+app.use('*', async (c, next) => {
+  const origins = c.env.CORS_ORIGINS?.split(',').map(s => s.trim()) ?? []
+  return cors({ origin: origins, allowMethods: ['GET', 'OPTIONS'] })(c, next)
+})
 
 app.route('/comments', comments)
 
