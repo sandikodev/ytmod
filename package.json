@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:web\"",
     "dev:api": "pnpm --filter @ytmod/api dev",
+    "dev:api:remote": "pnpm --filter @ytmod/api dev:remote",
     "dev:web": "pnpm --filter @ytmod/web dev",
     "build": "pnpm --filter @ytmod/web build",
     "test": "pnpm --filter \"*\" test",
@@ -12,6 +13,11 @@
     "typecheck": "pnpm --filter \"*\" typecheck",
     "format": "prettier --write .",
     "prepare": "husky",
+    "db:push": "pnpm --filter @ytmod/api db:push",
+    "db:pull": "pnpm --filter @ytmod/api db:pull",
+    "db:studio": "pnpm --filter @ytmod/api db:studio",
+    "db:generate": "pnpm --filter @ytmod/api db:generate",
+    "db:seed": "pnpm --filter @ytmod/api db:seed",
     "deploy": "bash deploy.sh all",
     "deploy:api": "bash deploy.sh api",
     "deploy:web": "bash deploy.sh web"

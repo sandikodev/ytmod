@@ -26,6 +26,10 @@ describe('extractVideoId', () => {
       expect(extractVideoId(`https://www.youtube.com/watch?v=${VALID_ID}`)).toBe(VALID_ID)
     })
 
+    it('youtube.com/watch?v= tanpa skema', () => {
+      expect(extractVideoId(`youtube.com/watch?v=${VALID_ID}`)).toBe(VALID_ID)
+    })
+
     it('youtube.com/watch?v= tanpa www', () => {
       expect(extractVideoId(`https://youtube.com/watch?v=${VALID_ID}`)).toBe(VALID_ID)
     })

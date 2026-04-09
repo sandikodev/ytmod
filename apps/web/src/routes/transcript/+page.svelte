@@ -36,7 +36,10 @@
       }
       result = (await res.json()) as TranscriptResponse
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Terjadi kesalahan'
+      const msg = e instanceof Error ? e.message : 'Terjadi kesalahan'
+      error = msg.includes('Transcript not available')
+        ? 'Transcript tidak ditemukan. Video ini kemungkinan tidak memiliki caption (manual/auto) atau dibatasi. Coba bahasa Inggris atau video lain.'
+        : msg
     } finally {
       loading = false
     }

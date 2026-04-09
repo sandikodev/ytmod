@@ -7,6 +7,8 @@
    * Logout menghapus token dan reload halaman.
    */
 
+  import { onMount } from 'svelte'
+  import { afterNavigate } from '$app/navigation'
   import favicon from '$lib/assets/favicon.svg'
   import { base } from '$app/paths'
 
@@ -37,6 +39,25 @@
     userEmail = null
     window.location.href = `${base}/`
   }
+
+  // Sync nav auth state with token changes (login redirects, storage changes)
+  onMount(() => {
+    const update = () => {
+      userEmail = getEmailFromToken()
+    }
+
+    update()
+    afterNavigate(update)
+
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === 'ytmod_token') update()
+    }
+    window.addEventListener('storage', onStorage)
+
+    return () => {
+      window.removeEventListener('storage', onStorage)
+    }
+  })
 </script>
 
 <svelte:head>

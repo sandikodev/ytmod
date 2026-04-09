@@ -9,9 +9,11 @@ export function extractVideoId(input: string): string | null {
   const trimmed = input.trim()
   if (!trimmed) return null
 
+  const normalized = addMissingScheme(trimmed)
+
   // Coba parse sebagai URL
   try {
-    const url = new URL(trimmed)
+    const url = new URL(normalized)
     const host = url.hostname.replace(/^www\./, '')
 
     if (host === 'youtube.com' || host === 'm.youtube.com') {
@@ -35,6 +37,21 @@ export function extractVideoId(input: string): string | null {
 
   // ID langsung 11 karakter
   return isValidId(trimmed) ? trimmed : null
+}
+
+/** Tambahkan https:// jika input berupa domain/path YouTube tanpa skema */
+function addMissingScheme(value: string): string {
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(value)) return value
+  if (value.startsWith('//')) return `https:${value}`
+  if (
+    value.startsWith('youtube.com') ||
+    value.startsWith('www.youtube.com') ||
+    value.startsWith('m.youtube.com')
+  ) {
+    return `https://${value}`
+  }
+  if (value.startsWith('youtu.be')) return `https://${value}`
+  return value
 }
 
 function isValidId(id: string): boolean {
