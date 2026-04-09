@@ -1,10 +1,18 @@
 <script lang="ts">
   import type { TranscriptResponse } from '@ytmod/shared'
   import { extractVideoId, formatTxt, formatSrt } from '$lib/transcript'
-  import { authFetch, requireAuth } from '$lib/auth'
+  import { authFetch, requireAuth, getToken } from '$lib/auth'
+  import { goto } from '$app/navigation'
+  import { base } from '$app/paths'
+  import { onMount } from 'svelte'
 
   const API_BASE = import.meta.env.VITE_API_URL
   if (!API_BASE) throw new Error('VITE_API_URL is not set')
+
+  // Redirect ke /login jika belum auth saat halaman dibuka
+  onMount(() => {
+    if (!getToken()) goto(`${base}/login`)
+  })
 
   let videoInput = $state('')
   let lang = $state('id')

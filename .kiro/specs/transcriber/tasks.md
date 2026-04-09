@@ -13,6 +13,7 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
     - `formatTxt(segments)` → setiap `segment.text` dipisahkan newline, tanpa timestamp
     - `formatSrtTimestamp(seconds)` → `"HH:MM:SS,mmm"`
     - `formatSrt(segments)` → format SRT standar per segment: index, timestamp range, teks, baris kosong
+    - Setiap fungsi wajib punya JSDoc yang menjelaskan tujuan dan return value
     - _Requirements: 3.2, 5.3, 5.4, 5.5, 5.6_
 
   - [x]\* 1.2 Tulis unit tests untuk `extractVideoId` di `apps/web/src/lib/transcript.test.ts`
@@ -49,6 +50,7 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
   - [x] 2.1 Tambah fungsi `extractVideoId(input)` di `apps/api/src/routes/transcript.ts`
     - Ekstrak 11-char ID dari URL sebelum validasi
     - Mendukung format yang sama dengan web helper
+    - Wajib ada JSDoc yang menjelaskan format yang didukung dan return value
     - _Requirements: 3.2_
 
   - [x] 2.2 Tambah fungsi `validateVideoId(id)` dan terapkan di route handler
@@ -61,6 +63,7 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
     - Strip HTML entities: `&amp;`, `&lt;`, `&gt;`, `&#39;`, `&quot;`
     - Strip HTML tags: `<b>`, `<i>`, `<font>`, dll (regex `/<[^>]+>/g`)
     - Filter segment dengan text kosong setelah stripping
+    - Wajib ada JSDoc yang menjelaskan input, output, dan side effects
     - _Requirements: 2.1, 2.4_
 
   - [x]\* 2.4 Tulis unit tests untuk `extractVideoId` dan `validateVideoId` di `transcript.test.ts`
@@ -113,9 +116,53 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
 - [x] 6. Checkpoint akhir — Semua tests pass
   - Jalankan `pnpm test && pnpm typecheck && pnpm lint`, pastikan semua hijau.
 
+- [ ] 7. Auth integration — `$lib/auth` untuk transcript page
+  - [ ] 7.1 Buat `apps/web/src/lib/auth.ts` dengan fungsi `getToken`, `requireAuth`, dan `authFetch`
+    - `getToken()` → ambil JWT dari `localStorage`, return `null` jika tidak ada atau SSR
+    - `requireAuth()` → redirect ke `/login` jika belum login, return token
+    - `authFetch(url, options)` → wrapper `fetch` yang otomatis sertakan `Authorization: Bearer {token}`
+    - Setiap fungsi wajib punya JSDoc yang menjelaskan tujuan, behavior SSR, dan side effects
+    - _Catatan: file sudah ada, task ini untuk verifikasi kualitas komentar sesuai code-quality.md_
+
+  - [ ] 7.2 Buat halaman login `apps/web/src/routes/login/+page.svelte`
+    - Form input token (password field)
+    - Simpan token ke `localStorage` dengan key `ytmod_token`
+    - Redirect ke halaman sebelumnya atau `/` setelah login
+    - Tampilkan error jika token kosong
+    - _Requirements: implicit dari penggunaan `requireAuth()` di transcript page_
+
+  - [ ] 7.3 Update `apps/web/.env.example` dengan dokumentasi auth
+    - Tambah komentar penjelasan mekanisme auth (token-based, localStorage)
+    - Sertakan contoh nilai untuk development dan production
+    - _Sesuai code-quality.md: setiap env var baru harus terdokumentasi di .env.example_
+
+- [ ] 8. Code quality audit — sesuai code-quality.md
+  - [ ] 8.1 Audit `apps/api/src/routes/transcript.ts`
+    - Verifikasi semua fungsi punya JSDoc yang menjelaskan tujuan (bukan implementasi)
+    - Verifikasi `Bindings` type punya komentar untuk setiap env var
+    - Verifikasi tidak ada hardcoded URL, key, atau domain
+    - Verifikasi fallback chain punya komentar yang menjelaskan *mengapa* (bukan *apa*)
+
+  - [ ] 8.2 Audit `apps/web/src/lib/transcript.ts`
+    - Verifikasi setiap fungsi punya JSDoc
+    - Verifikasi tidak ada komentar yang menjelaskan hal yang sudah jelas dari kode
+
+  - [ ] 8.3 Audit `apps/web/src/lib/auth.ts`
+    - Verifikasi JSDoc menjelaskan behavior SSR (`typeof localStorage === 'undefined'`)
+    - Verifikasi komentar menjelaskan *mengapa* redirect, bukan *apa* yang dilakukan
+
+  - [ ] 8.4 Update `apps/api/.env.example` dan `apps/web/.env.example`
+    - Pastikan semua env var yang digunakan fitur transcriber terdokumentasi
+    - Format sesuai code-quality.md: nama, penjelasan, contoh per environment
+
+- [ ] 9. Checkpoint final — code quality + tests
+  - Jalankan `pnpm test && pnpm typecheck && pnpm lint`
+  - Review checklist code-quality.md: tidak ada hardcode, semua fungsi punya JSDoc, .env.example lengkap
+
 ## Notes
 
 - Tasks bertanda `*` bersifat opsional dan bisa dilewati untuk MVP yang lebih cepat
+- Tasks 7-9 adalah tambahan baru berdasarkan `code-quality.md` steering yang aktif
 - Setiap task mereferensikan requirements spesifik untuk traceability
 - Property tests menggunakan **fast-check** dengan minimum 100 iterasi
-- Urutan commit yang disarankan: `test(web)` → `feat(web)` → `test(api)` → `feat(api)` → `test(shared)`
+- Urutan commit yang disarankan: `test(web)` → `feat(web)` → `test(api)` → `feat(api)` → `test(shared)` → `chore(web): auth integration` → `chore: code quality audit`

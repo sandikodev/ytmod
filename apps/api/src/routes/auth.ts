@@ -20,6 +20,23 @@ type Bindings = DbBindings & { JWT_SECRET: string }
 
 export const auth = new Hono<{ Bindings: Bindings }>()
 
+// Rate limit: 10 req/min per IP untuk mencegah brute force
+const rateMap = new Map<string, { count: number; reset: number }>()
+
+auth.use('*', async (c, next) => {
+  const ip = c.req.header('CF-Connecting-IP') ?? c.req.header('X-Forwarded-For') ?? 'unknown'
+  const now = Date.now()
+  const entry = rateMap.get(ip)
+  if (!entry || now > entry.reset) {
+    rateMap.set(ip, { count: 1, reset: now + 60_000 })
+  } else if (entry.count >= 10) {
+    return c.json({ error: 'Too many requests. Try again in a minute.' }, 429)
+  } else {
+    entry.count++
+  }
+  return next()
+})
+
 // Input validation schema — dipakai untuk register dan login
 const AuthSchema = z.object({
   email: z.string().email(),

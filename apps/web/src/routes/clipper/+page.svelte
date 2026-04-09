@@ -15,10 +15,18 @@
    */
 
   import type { ClipConfig, ClipperAnalyzeResponse, ClipperClipResponse, Clip } from '@ytmod/shared'
-  import { authFetch, requireAuth } from '$lib/auth'
+  import { authFetch, requireAuth, getToken } from '$lib/auth'
+  import { goto } from '$app/navigation'
+  import { base } from '$app/paths'
+  import { onMount } from 'svelte'
 
   const API_BASE = import.meta.env.VITE_API_URL
   if (!API_BASE) throw new Error('VITE_API_URL is not set')
+
+  // Redirect ke /login jika belum auth saat halaman dibuka
+  onMount(() => {
+    if (!getToken()) goto(`${base}/login`)
+  })
 
   // Default engine URL — override via UI input atau env var VITE_CLIPPER_ENGINE_URL
   const DEFAULT_ENGINE_URL = 'http://localhost:8080'

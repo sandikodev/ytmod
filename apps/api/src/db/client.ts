@@ -1,12 +1,20 @@
 /**
  * Database client — Turso (libsql)
  *
- * Singleton client yang dibuat per-request di Cloudflare Workers.
- * Credentials diambil dari env var, tidak pernah hardcoded.
+ * Selalu pakai @libsql/client/web karena:
+ *   1. Cloudflare Workers hanya support Web APIs (tidak ada Node fs/path)
+ *   2. @libsql/client/web support libsql://, wss://, https://, http://
  *
- * Env vars yang dibutuhkan:
- *   TURSO_URL        — libsql://your-db.turso.io
- *   TURSO_AUTH_TOKEN — token dari Turso dashboard
+ * Untuk development lokal, gunakan Turso preview database
+ * (bukan file: URL — tidak didukung oleh web client).
+ *
+ * Set di .dev.vars:
+ *   TURSO_URL=libsql://ytmod-prev-sandikodev.aws-ap-northeast-1.turso.io
+ *   TURSO_AUTH_TOKEN=<preview token>
+ *
+ * Env vars production (wrangler secret):
+ *   TURSO_URL=libsql://ytmod-sandikodev.aws-us-east-1.turso.io
+ *   TURSO_AUTH_TOKEN=<production token>
  */
 
 import { createClient } from '@libsql/client/web'
@@ -22,7 +30,7 @@ export type DbBindings = {
 export function createDb(env: DbBindings) {
   const client = createClient({
     url: env.TURSO_URL,
-    authToken: env.TURSO_AUTH_TOKEN,
+    authToken: env.TURSO_AUTH_TOKEN || undefined,
   })
   return drizzle(client, { schema })
 }
