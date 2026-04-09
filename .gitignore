@@ -8,4 +8,4 @@ apps/api/.env.production
 .dev.vars
 .wrangler/
 oke.chat
-.kiro/
+.kiro/settings/

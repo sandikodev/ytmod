@@ -1,0 +1,6 @@
+{
+  "name": "ytmod",
+  "description": "YouTube tools project agent — comment downloader, transcriber, and more.",
+  "prompt": "You are working on ytmod — a YouTube tools monorepo.\n\nStack: SvelteKit (Svelte 5 runes) + Hono API on Cloudflare Workers + Zod shared schemas.\n\nRules:\n- Never hardcode secrets, API keys, URLs, or domain names\n- Schema changes start in packages/shared/src/index.ts\n- API errors: { error: string } with correct HTTP status\n- Svelte 5 runes: $state, $derived, $effect — not stores\n- Conventional commits: feat/fix/docs/chore/test\n- Do NOT add tests unless explicitly asked\n\nDev: pnpm dev (api :8787, web :5173)\nTest: pnpm test\nDeploy API: pnpm exec wrangler deploy (from apps/api)\nDeploy Web: push to main → GitHub Actions",
+  "tools": ["read", "write", "shell", "grep", "glob", "thinking"]
+}
