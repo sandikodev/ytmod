@@ -11,7 +11,10 @@
     "lint:fix": "eslint . --fix && prettier --write .",
     "typecheck": "pnpm --filter \"*\" typecheck",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "deploy": "bash deploy.sh all",
+    "deploy:api": "bash deploy.sh api",
+    "deploy:web": "bash deploy.sh web"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.58.1",
