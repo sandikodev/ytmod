@@ -46,12 +46,12 @@ Banyak scaffolding sudah ada (`transcript.ts`, `transcript.test.ts`, `+page.svel
     - Tag: `// Feature: transcriber, Property 9: Nama file export konsisten`
 
 - [-] 2. Perbaiki API route: validasi videoId dan HTML stripping
-  - [-] 2.1 Tambah fungsi `extractVideoId(input)` di `apps/api/src/routes/transcript.ts`
+  - [x] 2.1 Tambah fungsi `extractVideoId(input)` di `apps/api/src/routes/transcript.ts`
     - Ekstrak 11-char ID dari URL sebelum validasi
     - Mendukung format yang sama dengan web helper
     - _Requirements: 3.2_
 
-  - [~] 2.2 Tambah fungsi `validateVideoId(id)` dan terapkan di route handler
+  - [x] 2.2 Tambah fungsi `validateVideoId(id)` dan terapkan di route handler
     - Validasi pattern `[a-zA-Z0-9_-]{11}` setelah ekstraksi
     - Return HTTP 400 dengan pesan `"Invalid videoId format"` jika tidak valid
     - _Requirements: 3.3_

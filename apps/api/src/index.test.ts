@@ -7,7 +7,11 @@ const testApp = new Hono<{ Bindings: { YOUTUBE_API_KEY: string; CORS_ORIGINS: st
 testApp.route('/comments', comments)
 testApp.get('/', (c) => c.json({ name: 'ytmod-api', version: '0.0.1' }))
 
-const mockEnv = { YOUTUBE_API_KEY: 'test-key', CORS_ORIGINS: 'http://localhost:5173' }
+const mockEnv = {
+  YOUTUBE_API_KEY: 'test-key',
+  CORS_ORIGINS: 'http://localhost:5173',
+  CLIPPER_ENGINE_URL: 'http://localhost:8080',
+}
 
 describe('GET /', () => {
   it('returns api info', async () => {

@@ -9,7 +9,11 @@ const mockTimedtext = JSON.stringify({
   ],
 })
 
-const mockEnv = { YOUTUBE_API_KEY: 'test-key', CORS_ORIGINS: 'http://localhost:5173' }
+const mockEnv = {
+  YOUTUBE_API_KEY: 'test-key',
+  CORS_ORIGINS: 'http://localhost:5173',
+  CLIPPER_ENGINE_URL: 'http://localhost:8080',
+}
 
 beforeEach(() => {
   vi.restoreAllMocks()
@@ -36,7 +40,7 @@ describe('GET /transcript', () => {
       })
     )
 
-    const res = await app.request('/transcript?videoId=abc123', {}, mockEnv)
+    const res = await app.request('/transcript?videoId=dQw4w9WgXcQ', {}, mockEnv)
     expect(res.status).toBe(200)
     const data = (await res.json()) as {
       segments: Array<{ text: string; start: number }>
@@ -55,7 +59,7 @@ describe('GET /transcript', () => {
       'fetch',
       vi.fn().mockResolvedValue({ ok: false, text: () => Promise.resolve('') })
     )
-    const res = await app.request('/transcript?videoId=novideo', {}, mockEnv)
+    const res = await app.request('/transcript?videoId=dQw4w9WgXcQ', {}, mockEnv)
     expect(res.status).toBe(404)
   })
 })
