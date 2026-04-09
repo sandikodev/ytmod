@@ -3,4 +3,5 @@ main = "src/index.ts"
 compatibility_date = "2024-06-20"
 compatibility_flags = ["nodejs_compat"]
 
-# Set secret via: pnpm exec wrangler secret put YOUTUBE_API_KEY
+# Secrets untuk production: pnpm exec wrangler secret put YOUTUBE_API_KEY
+# Secrets untuk dev lokal: simpan di .dev.vars (tidak di-commit)

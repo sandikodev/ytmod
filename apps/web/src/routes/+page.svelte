@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { CommentsResponse } from '@ytmod/shared'
 
-  const API_BASE = import.meta.env.VITE_API_URL ?? 'https://ytmod-api.sandikodev.workers.dev'
+  const API_BASE = import.meta.env.VITE_API_URL ?? 'https://ytmod-api.konxcid.workers.dev'
 
   let videoInput = $state('')
   let loading = $state(false)

@@ -9,7 +9,7 @@ type Bindings = {
 const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('*', cors({
-  origin: ['https://sandikodev.github.io', 'http://localhost:5173', 'http://localhost:4173'],
+  origin: ['https://sandikodev.github.io', 'https://ytmod-api.konxcid.workers.dev', 'http://localhost:5173', 'http://localhost:4173'],
   allowMethods: ['GET', 'OPTIONS'],
 }))
 
