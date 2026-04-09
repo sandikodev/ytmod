@@ -29,10 +29,10 @@
     try {
       const res = await fetch(`${API_BASE}/comments?videoId=${videoId}&maxResults=100&order=time`)
       if (!res.ok) {
-        const data = await res.json() as { error: string }
+        const data = (await res.json()) as { error: string }
         throw new Error(data.error ?? `HTTP ${res.status}`)
       }
-      result = await res.json() as CommentsResponse
+      result = (await res.json()) as CommentsResponse
     } catch (e) {
       error = e instanceof Error ? e.message : 'Terjadi kesalahan'
     } finally {
@@ -43,8 +43,15 @@
   function downloadCsv() {
     if (!result) return
     const header = 'id,author,text,likeCount,publishedAt,replyCount'
-    const rows = result.comments.map(c =>
-      [c.id, `"${c.author}"`, `"${c.text.replace(/"/g, '""')}"`, c.likeCount, c.publishedAt, c.replyCount ?? 0].join(',')
+    const rows = result.comments.map((c) =>
+      [
+        c.id,
+        `"${c.author}"`,
+        `"${c.text.replace(/"/g, '""')}"`,
+        c.likeCount,
+        c.publishedAt,
+        c.replyCount ?? 0,
+      ].join(',')
     )
     const csv = [header, ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -72,7 +79,12 @@
   <h1>YouTube Comment Downloader</h1>
   <p class="subtitle">Unduh komentar YouTube dalam format CSV atau JSON</p>
 
-  <form onsubmit={(e) => { e.preventDefault(); fetchComments() }}>
+  <form
+    onsubmit={(e) => {
+      e.preventDefault()
+      fetchComments()
+    }}
+  >
     <input
       type="text"
       bind:value={videoInput}
@@ -91,6 +103,11 @@
 
   {#if result}
     <div class="result">
+      {#if result.videoTitle}
+        <h2 class="video-title">
+          "{result.videoTitle}" — {result.totalComments.toLocaleString()} komentar
+        </h2>
+      {/if}
       <div class="result-header">
         <span>Ditemukan <strong>{result.totalComments.toLocaleString()}</strong> komentar</span>
         <div class="actions">
@@ -127,8 +144,13 @@
     font-family: system-ui, sans-serif;
   }
 
-  h1 { margin-bottom: 0.25rem; }
-  .subtitle { color: #666; margin-bottom: 2rem; }
+  h1 {
+    margin-bottom: 0.25rem;
+  }
+  .subtitle {
+    color: #666;
+    margin-bottom: 2rem;
+  }
 
   form {
     display: flex;
@@ -154,9 +176,21 @@
     font-size: 1rem;
   }
 
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 
-  .error { color: #c00; }
+  .error {
+    color: #c00;
+  }
+
+  .video-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #111;
+  }
 
   .result-header {
     display: flex;
@@ -165,8 +199,14 @@
     margin-bottom: 1rem;
   }
 
-  .actions { display: flex; gap: 0.5rem; }
-  .actions button { background: #333; font-size: 0.875rem; }
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .actions button {
+    background: #333;
+    font-size: 0.875rem;
+  }
 
   .comments {
     list-style: none;
@@ -191,6 +231,11 @@
     color: #555;
   }
 
-  .comment-meta strong { color: #111; }
-  .comments p { margin: 0; line-height: 1.5; }
+  .comment-meta strong {
+    color: #111;
+  }
+  .comments p {
+    margin: 0;
+    line-height: 1.5;
+  }
 </style>
