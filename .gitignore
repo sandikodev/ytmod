@@ -3,6 +3,8 @@ dist/
 build/
 .env
 .env.local
+apps/web/.env.production
+apps/api/.env.production
 .dev.vars
 .wrangler/
 oke.chat
