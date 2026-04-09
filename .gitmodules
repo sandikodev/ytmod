@@ -1,0 +1,3 @@
+[submodule "apps/clipper"]
+	path = apps/clipper
+	url = git@github.com:sandikodev/clipper-rust.git
