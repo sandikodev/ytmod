@@ -1,13 +1,24 @@
 <script lang="ts">
-  import type { CommentsResponse } from '@ytmod/shared'
+  import type { Comment, CommentsResponse } from '@ytmod/shared'
 
   const API_BASE = import.meta.env.VITE_API_URL
   if (!API_BASE) throw new Error('VITE_API_URL is not set')
 
   let videoInput = $state('')
   let loading = $state(false)
+  let loadingMore = $state(false)
   let error = $state('')
-  let result = $state<CommentsResponse | null>(null)
+
+  // result metadata (title, total)
+  let result = $state<Pick<CommentsResponse, 'videoId' | 'videoTitle' | 'totalComments'> | null>(
+    null
+  )
+  let allComments = $state<Comment[]>([])
+  let nextPageToken = $state<string | undefined>(undefined)
+
+  // filter controls
+  let order = $state<'time' | 'relevance'>('relevance')
+  let maxResults = $state(20)
 
   function extractVideoId(input: string): string {
     try {
@@ -18,21 +29,39 @@
     }
   }
 
+  function buildUrl(videoId: string, pageToken?: string) {
+    const params = new URLSearchParams({
+      videoId,
+      maxResults: String(maxResults),
+      order,
+      ...(pageToken ? { pageToken } : {}),
+    })
+    return `${API_BASE}/comments?${params}`
+  }
+
   async function fetchComments() {
     if (!videoInput.trim()) return
     loading = true
     error = ''
     result = null
+    allComments = []
+    nextPageToken = undefined
 
     const videoId = extractVideoId(videoInput)
-
     try {
-      const res = await fetch(`${API_BASE}/comments?videoId=${videoId}&maxResults=100&order=time`)
+      const res = await fetch(buildUrl(videoId))
       if (!res.ok) {
         const data = (await res.json()) as { error: string }
         throw new Error(data.error ?? `HTTP ${res.status}`)
       }
-      result = (await res.json()) as CommentsResponse
+      const data = (await res.json()) as CommentsResponse
+      result = {
+        videoId: data.videoId,
+        videoTitle: data.videoTitle,
+        totalComments: data.totalComments,
+      }
+      allComments = data.comments
+      nextPageToken = data.nextPageToken
     } catch (e) {
       error = e instanceof Error ? e.message : 'Terjadi kesalahan'
     } finally {
@@ -40,10 +69,29 @@
     }
   }
 
+  async function loadMore() {
+    if (!result || !nextPageToken) return
+    loadingMore = true
+    try {
+      const res = await fetch(buildUrl(result.videoId, nextPageToken))
+      if (!res.ok) {
+        const data = (await res.json()) as { error: string }
+        throw new Error(data.error ?? `HTTP ${res.status}`)
+      }
+      const data = (await res.json()) as CommentsResponse
+      allComments = [...allComments, ...data.comments]
+      nextPageToken = data.nextPageToken
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Terjadi kesalahan'
+    } finally {
+      loadingMore = false
+    }
+  }
+
   function downloadCsv() {
-    if (!result) return
+    if (!allComments.length) return
     const header = 'id,author,text,likeCount,publishedAt,replyCount'
-    const rows = result.comments.map((c) =>
+    const rows = allComments.map((c) =>
       [
         c.id,
         `"${c.author}"`,
@@ -53,20 +101,22 @@
         c.replyCount ?? 0,
       ].join(',')
     )
-    const csv = [header, ...rows].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `comments-${result.videoId}.csv`
-    a.click()
+    download([header, ...rows].join('\n'), `comments-${result?.videoId}.csv`, 'text/csv')
   }
 
   function downloadJson() {
-    if (!result) return
-    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' })
+    if (!allComments.length) return
+    download(
+      JSON.stringify({ ...result, comments: allComments }, null, 2),
+      `comments-${result?.videoId}.json`,
+      'application/json'
+    )
+  }
+
+  function download(content: string, filename: string, type: string) {
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `comments-${result.videoId}.json`
+    a.href = URL.createObjectURL(new Blob([content], { type }))
+    a.download = filename
     a.click()
   }
 </script>
@@ -85,16 +135,36 @@
       fetchComments()
     }}
   >
-    <input
-      type="text"
-      bind:value={videoInput}
-      placeholder="URL atau Video ID YouTube"
-      aria-label="URL atau Video ID YouTube"
-      disabled={loading}
-    />
-    <button type="submit" disabled={loading || !videoInput.trim()}>
-      {loading ? 'Mengambil...' : 'Ambil Komentar'}
-    </button>
+    <div class="input-row">
+      <input
+        type="text"
+        bind:value={videoInput}
+        placeholder="URL atau Video ID YouTube"
+        aria-label="URL atau Video ID YouTube"
+        disabled={loading}
+      />
+      <button type="submit" disabled={loading || !videoInput.trim()}>
+        {loading ? 'Mengambil...' : 'Ambil Komentar'}
+      </button>
+    </div>
+
+    <div class="filter-row">
+      <label>
+        Urutan
+        <select bind:value={order} disabled={loading}>
+          <option value="relevance">Paling Relevan</option>
+          <option value="time">Terbaru</option>
+        </select>
+      </label>
+      <label>
+        Per halaman
+        <select bind:value={maxResults} disabled={loading}>
+          <option value={20}>20</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+      </label>
+    </div>
   </form>
 
   {#if error}
@@ -104,12 +174,14 @@
   {#if result}
     <div class="result">
       {#if result.videoTitle}
-        <h2 class="video-title">
-          "{result.videoTitle}" — {result.totalComments.toLocaleString()} komentar
-        </h2>
+        <h2 class="video-title">"{result.videoTitle}"</h2>
       {/if}
+
       <div class="result-header">
-        <span>Ditemukan <strong>{result.totalComments.toLocaleString()}</strong> komentar</span>
+        <span>
+          Menampilkan <strong>{allComments.length.toLocaleString()}</strong>
+          dari <strong>{result.totalComments.toLocaleString()}</strong> komentar
+        </span>
         <div class="actions">
           <button onclick={downloadCsv}>Unduh CSV</button>
           <button onclick={downloadJson}>Unduh JSON</button>
@@ -117,7 +189,7 @@
       </div>
 
       <ul class="comments">
-        {#each result.comments as comment (comment.id)}
+        {#each allComments as comment (comment.id)}
           <li>
             <div class="comment-meta">
               <strong>{comment.author}</strong>
@@ -132,6 +204,12 @@
           </li>
         {/each}
       </ul>
+
+      {#if nextPageToken}
+        <button class="load-more" onclick={loadMore} disabled={loadingMore}>
+          {loadingMore ? 'Memuat...' : 'Muat lebih banyak'}
+        </button>
+      {/if}
     </div>
   {/if}
 </main>
@@ -152,10 +230,31 @@
     margin-bottom: 2rem;
   }
 
-  form {
+  .input-row {
     display: flex;
     gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 1.5rem;
     margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #555;
+  }
+
+  .filter-row label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  select {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.875rem;
   }
 
   input {
@@ -189,7 +288,6 @@
     font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
-    color: #111;
   }
 
   .result-header {
@@ -237,5 +335,20 @@
   .comments p {
     margin: 0;
     line-height: 1.5;
+  }
+
+  .load-more {
+    display: block;
+    width: 100%;
+    margin-top: 1.5rem;
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .load-more:hover:not(:disabled) {
+    background: #eee;
   }
 </style>
